@@ -1,9 +1,9 @@
 """
-This is the first version of the binary population exploration program.
+This program creates a fiducial line utilizing a sliding window of desired size and the IQR of contained in that window.
 
-This version (Nov, 12/16) fits a ridgeline to the F275W vs. F275W-Ks CMD. 
+"your_file_here" must contain magnitudes in two different bands (to create a CMD), indexing will need to be adjusted
 
-The next step is to begin binning following the ridgeline in order to create a histogram to fit with a Gaussian.
+Includes optional return statement in the main function along with optional plots to display status of ridgeline
 
 """
 import numpy as np
@@ -17,8 +17,7 @@ from matplotlib.ticker import MultipleLocator
 
 class RidgeLine:
 	def main(self):
-		#self.all_info = np.loadtxt("NGC2298_HJK_COMPLETE_GSAOI_PIOTTO_ACSGCS_RED_ZP_NOPM.pmclean.cat")
-		self.all_info = np.loadtxt("NGC3201_HJK_COMPLETE_GSAOI_PIOTTO_ACSGCS_PM_RED_II_com.pmcleanII.cat")
+		self.all_info = np.loadtxt("your_file_here")
 		
 		print "	"
 		print "------------------CMD/RIDGELINE PARAMETERS-------------------"
@@ -30,7 +29,7 @@ class RidgeLine:
 
 		self.ridgeline_colour, self.ridgeline_y, self.ridgeline_col_addsig, self.ridgeline_col_subsig, self.mag_filter = self.make_ridgeline()
 		
-		self.smooth_col, self.smooth_col_addsig, self.smooth_col_subsig, self.smooth_mags = self.smooth_ridgeline(self.bin_size)
+		self.smooth_col, self.smooth_col_addsig, self.smooth_col_subsig, self.smooth_mags = self.smooth_ridgeline(self.bin_size)  #optional smoothing function to resample and smooth the fiducial line
 		
 		print "	"
 		answer = raw_input("Would you like to try a different bin size and replot? (Y or N) ")
@@ -70,16 +69,16 @@ class RidgeLine:
 		""" 
 		mag_filter = []
 
-		for num in range(0, self.all_info.size/67):		#iterate through, only keep data within mag. window
+		for num in range(0, self.all_info.size/67):				#iterate through, only keep data within mag. window
 			mag = self.all_info[num, 22]
 
 			if self.max_mag < mag < self.min_mag:
 				mag_filter.append(num)
 
-		all_info_sorted = np.empty([len(mag_filter), 2]) #create new array to store colour and mag
+		all_info_sorted = np.empty([len(mag_filter), 2]) 			#create new array to store colour and mag
 		all_info_sorted[:, 0] = self.all_info[mag_filter, 22] - self.all_info[mag_filter, 11] 
 		all_info_sorted[:, 1] = self.all_info[mag_filter, 22]
-		all_info_sorted = all_info_sorted[all_info_sorted[:, 1].argsort()] #organize the new array in order of increasing Ks mag.
+		all_info_sorted = all_info_sorted[all_info_sorted[:, 1].argsort()] 	#organize the new array in order of increasing Ks mag.
 
 		good_colour = []
 		good_colour_addsigma = []
@@ -97,13 +96,10 @@ class RidgeLine:
 			sorted_group_70 = sorted_group[0:((group.size/2) * 0.70), :]
 
 			try:
-			#mean_colour = np.median(sorted_group_70[:, 0])
 				mean_colour = sorted_group_70[int(sorted_group_70.size/4 - 1), 0]
-			#sigma_colour = np.std(sorted_group_70[:, 0])
-				sigma_colour = 0.63 * math.fabs(sorted_group_70[int(3*sorted_group_70.size/8 - 1), 0] - sorted_group_70[int(sorted_group_70.size/8 - 1), 0]) 		#CHECK THIS OUT interquartial range, sigma may not be classical definition, may change with binary fraction
-			#mean_band1_mag = np.median(sorted_group_70[:, 1])
-				mean_band1_mag = sorted_group_70[int(sorted_group_70.size/4 - 1), 1]									#take 35th data point = median of first 69
-																													#take the difference between (17th dp and 52 dp)*0.63 = sigma
+				sigma_colour = 0.63 * math.fabs(sorted_group_70[int(3*sorted_group_70.size/8 - 1), 0] - sorted_group_70[int(sorted_group_70.size/8 - 1), 0]) #interquartial range, sigma may not be classical definition, may change with binary fraction
+				mean_band1_mag = sorted_group_70[int(sorted_group_70.size/4 - 1), 1]									     #take 35th data point = median of first 69
+																					     #take the difference between (17th dp and 52 dp)*0.63 = sigma
 				good_colour.append(mean_colour)
 				good_colour_addsigma.append(mean_colour + sigma_colour)
 				good_colour_subsigma.append(mean_colour - sigma_colour)
